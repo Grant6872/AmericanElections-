@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>U.S. Presidential Election Simulator (1796–2024)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #f5f5f5; padding: 20px 16px; max-width: 620px; margin: 0 auto; }
+    h1 { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+    .subtitle { text-align: center; font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .progress { text-align: center; color: #666; margin-bottom: 22px; font-size: 14px; }
+    .candidate-card {
+      border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    .card-content { display: flex; gap: 16px; margin-bottom: 16px; }
+    .candidate-card img {
+      width: 90px; height: 90px; border-radius: 10px; object-fit: cover;
+      border: 3px solid rgba(255,255,255,0.7); background: #ddd; flex-shrink: 0;
+    }
+    .info { flex: 1; }
+    .name { font-size: 21px; font-weight: 700; margin-bottom: 4px; }
+    .party { font-size: 15px; margin-bottom: 8px; opacity: 0.95; }
+    .bio { font-size: 14px; line-height: 1.4; opacity: 0.95; }
+    .vote-btn {
+      display: block; width: 100%; background: #2563eb; color: white; border: none;
+      padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+    .results-card {
+      background: white; border-radius: 14px; padding: 20px; margin-bottom: 16px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1); color: #111;
+    }
+    .party-count { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+    button.restart { background: #ff3b30; color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 700; width: 100%; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    // Full list of elections from 1796 to 2024 (2 major candidates each)
+    const elections = [
+      { year: 1796, title: "Election of 1796", candidates: [
+        { name: "John Adams", party: "Federalist", color: "#e8a87c", image:
+"https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/John_Adams_A18236.jpg/440px-John_Adams_A18236.jpg",", bio: "Vice President under Washington, Founding Father, Senior Diplomat in Europe, Favored strong centralization, protectionism, and industriaism" },
+        { name: "Thomas Jefferson", party: "Democratic-Republican", color: "#2e7d32", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg/200px-Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg", bio: "Former Secretary of State. States’ rights and agrarian interests." }
+      ]},
+      { year: 1800, title: "Election of 1800", candidates: [
+        { name: "Thomas Jefferson", party: "Democratic-Republican", color: "#2e7d32", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg/200px-Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg", bio: "Incumbent Vice President. Revolution of 1800." },
+        { name: "John Adams", party: "Federalist", color: "#e8a87c", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/John_Adams_A18236.jpg/200px-John_Adams_A18236.jpg", bio: "Incumbent President seeking re-election." }
+      ]},
+      { year: 1804, title: "Election of 1804", candidates: [
+        { name: "Thomas Jefferson", party: "Democratic-Republican", color: "#2e7d32", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg/200px-Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg", bio: "Incumbent President. Louisiana Purchase era." },
+        { name: "Charles C. Pinckney", party: "Federalist", color: "#e8a87c", image: "https://via.placeholder.com/150?text=Pinckney", bio: "Federalist candidate, South Carolina statesman." }
+      ]},
+      { year: 1808, title: "Election of 1808", candidates: [
+        { name: "James Madison", party: "Democratic-Republican", color: "#2e7d32", image: "https://via.placeholder.com/150?text=Madison", bio: "Secretary of State under Jefferson. Father of the Constitution." },
+        { name: "Charles C. Pinckney", party: "Federalist", color: "#e8a87c", image: "https://via.placeholder.com/150?text=Pinckney", bio: "Federalist nominee again." }
+      ]},
+      { year: 1812, title: "Election of 1812", candidates: [
+        { name: "James Madison", party: "Democratic-Republican", color: "#2e7d32", image: "https://via.placeholder.com/150?text=Madison", bio: "Incumbent during the War of 1812." },
+        { name: "DeWitt Clinton", party: "Federalist", color: "#e8a87c", image: "https://via.placeholder.com/150?text=Clinton", bio: "New York politician opposing the war." }
+      ]},
+      { year: 1816, title: "Election of 1816", candidates: [
+        { name: "James Monroe", party: "Democratic-Republican", color: "#2e7d32", image: "https://via.placeholder.com/150?text=Monroe", bio: "Secretary of State and War. Era of Good Feelings begins." },
+        { name: "Rufus King", party: "Federalist", color: "#e8a87c", image: "https://via.placeholder.com/150?text=King", bio: "Last strong Federalist candidate." }
+      ]},
+      { year: 1820, title: "Election of 1820", candidates: [
+        { name: "James Monroe", party: "Democratic-Republican", color: "#2e7d32", image: "https://via.placeholder.com/150?text=Monroe", bio: "Incumbent. Essentially unopposed." },
+        { name: "John Quincy Adams", party: "Democratic-Republican", color: "#1565c0", image: "https://via.placeholder.com/150?text=JQA", bio: "Received one electoral vote." }
+      ]},
+      { year: 1824, title: "Election of 1824", candidates: [
+        { name: "John Quincy Adams", party: "Democratic-Republican", color: "#1565c0", image: "https://via.placeholder.com/150?text=JQA", bio: "Son of John Adams. Won in House of Representatives." },
+        { name: "Andrew Jackson", party: "Democratic-Republican", color: "#c62828", image: "https://via.placeholder.com/150?text=Jackson", bio: "War hero. Won popular and electoral vote but lost in House." }
+      ]},
+      { year: 1828, title: "Election of 1828", candidates: [
+        { name: "Andrew Jackson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Jackson", bio: "Founder of the Democratic Party. Landslide victory." },
+        { name: "John Quincy Adams", party: "National Republican", color: "#1565c0", image: "https://via.placeholder.com/150?text=JQA", bio: "Incumbent President." }
+      ]},
+      { year: 1832, title: "Election of 1832", candidates: [
+        { name: "Andrew Jackson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Jackson", bio: "Incumbent. Bank War era." },
+        { name: "Henry Clay", party: "National Republican", color: "#1565c0", image: "https://via.placeholder.com/150?text=Clay", bio: "The Great Compromiser." }
+      ]},
+      { year: 1836, title: "Election of 1836", candidates: [
+        { name: "Martin Van Buren", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Van+Buren", bio: "Jackson’s chosen successor." },
+        { name: "William Henry Harrison", party: "Whig", color: "#f9a825", image: "https://via.placeholder.com/150?text=Harrison", bio: "Leading Whig candidate." }
+      ]},
+      { year: 1840, title: "Election of 1840", candidates: [
+        { name: "William Henry Harrison", party: "Whig", color: "#f9a825", image: "https://via.placeholder.com/150?text=Harrison", bio: "Tippecanoe and Tyler Too." },
+        { name: "Martin Van Buren", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Van+Buren", bio: "Incumbent President." }
+      ]},
+      { year: 1844, title: "Election of 1844", candidates: [
+        { name: "James K. Polk", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Polk", bio: "Dark horse. Expansionist." },
+        { name: "Henry Clay", party: "Whig", color: "#f9a825", image: "https://via.placeholder.com/150?text=Clay", bio: "Whig nominee again." }
+      ]},
+      { year: 1848, title: "Election of 1848", candidates: [
+        { name: "Zachary Taylor", party: "Whig", color: "#f9a825", image: "https://via.placeholder.com/150?text=Taylor", bio: "Mexican-American War hero." },
+        { name: "Lewis Cass", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Cass", bio: "Democratic nominee." }
+      ]},
+      { year: 1852, title: "Election of 1852", candidates: [
+        { name: "Franklin Pierce", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Pierce", bio: "Compromise candidate." },
+        { name: "Winfield Scott", party: "Whig", color: "#f9a825", image: "https://via.placeholder.com/150?text=Scott", bio: "Last major Whig candidate." }
+      ]},
+      { year: 1856, title: "Election of 1856", candidates: [
+        { name: "James Buchanan", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Buchanan", bio: "Last pre-Civil War Democrat." },
+        { name: "John C. Frémont", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Fremont", bio: "First Republican presidential nominee." }
+      ]},
+      { year: 1860, title: "Election of 1860", candidates: [
+        { name: "Abraham Lincoln", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Lincoln", bio: "Republican nominee. Civil War begins after his election." },
+        { name: "Stephen A. Douglas", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Douglas", bio: "Northern Democratic nominee." }
+      ]},
+      { year: 1864, title: "Election of 1864", candidates: [
+        { name: "Abraham Lincoln", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Lincoln", bio: "Incumbent during Civil War. National Union ticket." },
+        { name: "George B. McClellan", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=McClellan", bio: "Former Union general." }
+      ]},
+      { year: 1868, title: "Election of 1868", candidates: [
+        { name: "Ulysses S. Grant", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Grant", bio: "Civil War hero." },
+        { name: "Horatio Seymour", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Seymour", bio: "Democratic nominee." }
+      ]},
+      { year: 1872, title: "Election of 1872", candidates: [
+        { name: "Ulysses S. Grant", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Grant", bio: "Incumbent President." },
+        { name: "Horace Greeley", party: "Liberal Republican / Democratic", color: "#6a1b9a", image: "https://via.placeholder.com/150?text=Greeley", bio: "Newspaper editor." }
+      ]},
+      { year: 1876, title: "Election of 1876", candidates: [
+        { name: "Rutherford B. Hayes", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Hayes", bio: "Won the disputed election." },
+        { name: "Samuel J. Tilden", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Tilden", bio: "Won the popular vote." }
+      ]},
+      { year: 1880, title: "Election of 1880", candidates: [
+        { name: "James A. Garfield", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Garfield", bio: "Republican nominee." },
+        { name: "Winfield Scott Hancock", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Hancock", bio: "Democratic nominee." }
+      ]},
+      { year: 1884, title: "Election of 1884", candidates: [
+        { name: "Grover Cleveland", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Cleveland", bio: "First Democrat elected since Civil War." },
+        { name: "James G. Blaine", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Blaine", bio: "Republican nominee." }
+      ]},
+      { year: 1888, title: "Election of 1888", candidates: [
+        { name: "Benjamin Harrison", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Harrison", bio: "Grandson of William Henry Harrison." },
+        { name: "Grover Cleveland", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Cleveland", bio: "Incumbent President." }
+      ]},
+      { year: 1892, title: "Election of 1892", candidates: [
+        { name: "Grover Cleveland", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Cleveland", bio: "Only president to serve two non-consecutive terms (until Trump)." },
+        { name: "Benjamin Harrison", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Harrison", bio: "Incumbent President." }
+      ]},
+      { year: 1896, title: "Election of 1896", candidates: [
+        { name: "William McKinley", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=McKinley", bio: "Front porch campaign." },
+        { name: "William Jennings Bryan", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Bryan", bio: "Cross of Gold speech." }
+      ]},
+      { year: 1900, title: "Election of 1900", candidates: [
+        { name: "William McKinley", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=McKinley", bio: "Incumbent. Theodore Roosevelt as running mate." },
+        { name: "William Jennings Bryan", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Bryan", bio: "Rematch." }
+      ]},
+      { year: 1904, title: "Election of 1904", candidates: [
+        { name: "Theodore Roosevelt", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=TR", bio: "Incumbent after McKinley’s assassination." },
+        { name: "Alton B. Parker", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Parker", bio: "Democratic nominee." }
+      ]},
+      { year: 1908, title: "Election of 1908", candidates: [
+        { name: "William Howard Taft", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Taft", bio: "Roosevelt’s chosen successor." },
+        { name: "William Jennings Bryan", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Bryan", bio: "Third try." }
+      ]},
+      { year: 1912, title: "Election of 1912", candidates: [
+        { name: "Woodrow Wilson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Wilson", bio: "Won because Republican vote split." },
+        { name: "Theodore Roosevelt", party: "Progressive", color: "#ef6c00", image: "https://via.placeholder.com/150?text=TR", bio: "Bull Moose Party." }
+      ]},
+      { year: 1916, title: "Election of 1916", candidates: [
+        { name: "Woodrow Wilson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Wilson", bio: "He kept us out of war." },
+        { name: "Charles Evans Hughes", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Hughes", bio: "Republican nominee." }
+      ]},
+      { year: 1920, title: "Election of 1920", candidates: [
+        { name: "Warren G. Harding", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Harding", bio: "Return to normalcy." },
+        { name: "James M. Cox", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Cox", bio: "Democratic nominee." }
+      ]},
+      { year: 1924, title: "Election of 1924", candidates: [
+        { name: "Calvin Coolidge", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Coolidge", bio: "Silent Cal. Incumbent." },
+        { name: "John W. Davis", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Davis", bio: "Democratic nominee." }
+      ]},
+      { year: 1928, title: "Election of 1928", candidates: [
+        { name: "Herbert Hoover", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Hoover", bio: "Prosperity nominee." },
+        { name: "Al Smith", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Smith", bio: "First Catholic major-party nominee." }
+      ]},
+      { year: 1932, title: "Election of 1932", candidates: [
+        { name: "Franklin D. Roosevelt", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=FDR", bio: "New Deal. Landslide." },
+        { name: "Herbert Hoover", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Hoover", bio: "Incumbent during Depression." }
+      ]},
+      { year: 1936, title: "Election of 1936", candidates: [
+        { name: "Franklin D. Roosevelt", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=FDR", bio: "Incumbent. Even bigger landslide." },
+        { name: "Alf Landon", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Landon", bio: "Republican nominee." }
+      ]},
+      { year: 1940, title: "Election of 1940", candidates: [
+        { name: "Franklin D. Roosevelt", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=FDR", bio: "Third term. Unprecedented." },
+        { name: "Wendell Willkie", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Willkie", bio: "Businessman turned candidate." }
+      ]},
+      { year: 1944, title: "Election of 1944", candidates: [
+        { name: "Franklin D. Roosevelt", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=FDR", bio: "Fourth term during World War II." },
+        { name: "Thomas E. Dewey", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Dewey", bio: "Republican nominee." }
+      ]},
+      { year: 1948, title: "Election of 1948", candidates: [
+        { name: "Harry S. Truman", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Truman", bio: "Dewey Defeats Truman (wrong)." },
+        { name: "Thomas E. Dewey", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Dewey", bio: "Rematch." }
+      ]},
+      { year: 1952, title: "Election of 1952", candidates: [
+        { name: "Dwight D. Eisenhower", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Ike", bio: "I Like Ike. War hero." },
+        { name: "Adlai Stevenson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Stevenson", bio: "Democratic nominee." }
+      ]},
+      { year: 1956, title: "Election of 1956", candidates: [
+        { name: "Dwight D. Eisenhower", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Ike", bio: "Incumbent. Easy re-election." },
+        { name: "Adlai Stevenson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Stevenson", bio: "Rematch." }
+      ]},
+      { year: 1960, title: "Election of 1960", candidates: [
+        { name: "John F. Kennedy", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=JFK", bio: "First televised debates. Narrow win." },
+        { name: "Richard Nixon", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Nixon", bio: "Vice President under Eisenhower." }
+      ]},
+      { year: 1964, title: "Election of 1964", candidates: [
+        { name: "Lyndon B. Johnson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=LBJ", bio: "Landslide after Kennedy assassination." },
+        { name: "Barry Goldwater", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Goldwater", bio: "Extremism in the defense of liberty..." }
+      ]},
+      { year: 1968, title: "Election of 1968", candidates: [
+        { name: "Richard Nixon", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Nixon", bio: "Law and order. Comeback." },
+        { name: "Hubert Humphrey", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Humphrey", bio: "Vice President under Johnson." }
+      ]},
+      { year: 1972, title: "Election of 1972", candidates: [
+        { name: "Richard Nixon", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Nixon", bio: "Massive landslide." },
+        { name: "George McGovern", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=McGovern", bio: "Anti-war candidate." }
+      ]},
+      { year: 1976, title: "Election of 1976", candidates: [
+        { name: "Jimmy Carter", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Carter", bio: "Peanut farmer from Georgia." },
+        { name: "Gerald Ford", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Ford", bio: "Incumbent after Nixon resignation." }
+      ]},
+      { year: 1980, title: "Election of 1980", candidates: [
+        { name: "Ronald Reagan", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Reagan", bio: "Are you better off than you were four years ago?" },
+        { name: "Jimmy Carter", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Carter", bio: "Incumbent President." }
+      ]},
+      { year: 1984, title: "Election of 1984", candidates: [
+        { name: "Ronald Reagan", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Reagan", bio: "Morning in America. Historic landslide." },
+        { name: "Walter Mondale", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Mondale", bio: "Former Vice President." }
+      ]},
+      { year: 1988, title: "Election of 1988", candidates: [
+        { name: "George H. W. Bush", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Bush41", bio: "Read my lips: no new taxes." },
+        { name: "Michael Dukakis", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Dukakis", bio: "Massachusetts governor." }
+      ]},
+      { year: 1992, title: "Election of 1992", candidates: [
+        { name: "Bill Clinton", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Clinton", bio: "It’s the economy, stupid." },
+        { name: "George H. W. Bush", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Bush41", bio: "Incumbent President." }
+      ]},
+      { year: 1996, title: "Election of 1996", candidates: [
+        { name: "Bill Clinton", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Clinton", bio: "Incumbent. Bridge to the 21st century." },
+        { name: "Bob Dole", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Dole", bio: "Senate Majority Leader." }
+      ]},
+      { year: 2000, title: "Election of 2000", candidates: [
+        { name: "George W. Bush", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Bush43", bio: "Narrow Electoral College win." },
+        { name: "Al Gore", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Gore", bio: "Won the popular vote." }
+      ]},
+      { year: 2004, title: "Election of 2004", candidates: [
+        { name: "George W. Bush", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Bush43", bio: "Incumbent during War on Terror." },
+        { name: "John Kerry", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Kerry", bio: "Massachusetts senator." }
+      ]},
+      { year: 2008, title: "Election of 2008", candidates: [
+        { name: "Barack Obama", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Obama", bio: "Yes We Can. First Black president." },
+        { name: "John McCain", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=McCain", bio: "Arizona senator and war hero." }
+      ]},
+      { year: 2012, title: "Election of 2012", candidates: [
+        { name: "Barack Obama", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Obama", bio: "Incumbent. Four more years." },
+        { name: "Mitt Romney", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Romney", bio: "Former Massachusetts governor." }
+      ]},
+      { year: 2016, title: "Election of 2016", candidates: [
+        { name: "Donald Trump", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Trump", bio: "Make America Great Again." },
+        { name: "Hillary Clinton", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Clinton", bio: "First woman major-party nominee." }
+      ]},
+      { year: 2020, title: "Election of 2020", candidates: [
+        { name: "Joe Biden", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Biden", bio: "Former Vice President." },
+        { name: "Donald Trump", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Trump", bio: "Incumbent President." }
+      ]},
+      { year: 2024, title: "Election of 2024", candidates: [
+        { name: "Donald Trump", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Trump", bio: "Former President. Won second non-consecutive term." },
+        { name: "Kamala Harris", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Harris", bio: "Vice President. First woman of color major-party nominee." }
+      ]}
+    ];
+
+    let current = 0;
+    let votes = [];
+
+    function render() {
+      const app = document.getElementById("app");
+
+      if (current >= elections.length) {
+        // Final results
+        const partyCount = {};
+        votes.forEach(v => {
+          partyCount[v.party] = (partyCount[v.party] || 0) + 1;
+        });
+
+        let html = `<h1>Your Complete Ballot</h1>
+          <div class="progress">You voted in all ${elections.length} elections</div>
+          <div class="results-card"><h2 style="margin-bottom:14px">Candidates You Chose</h2>`;
+
+        votes.forEach((v, i) => {
+          html += `<div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #eee">
+            <strong>${elections[i].title}</strong><br>
+            <span style="color:\( {v.color};font-weight:700"> \){v.name}</span> (${v.party})
+          </div>`;
+        });
+
+        html += `</div><div class="results-card"><h2 style="margin-bottom:14px">Party Totals</h2>`;
+        for (let p in partyCount) {
+          html += `<div class="party-count"><span>\( {p}</span><strong> \){partyCount[p]} time${partyCount[p] > 1 ? "s" : ""}</strong></div>`;
+        }
+        html += `</div><button class="restart" onclick="restart()">Start Over</button>`;
+        app.innerHTML = html;
+        return;
+      }
+
+      const e = elections[current];
+      let html = `<h1>U.S. Presidential Election Simulator</h1>
+        <div class="subtitle">${e.title}</div>
+        <div class="progress">Election ${current + 1} of ${elections.length}</div>`;
+
+      e.candidates.forEach((c, index) => {
+        html += `<div class="candidate-card" style="background:${c.color}">
+          <div class="card-content">
+            <img src="\( {c.image}" alt=" \){c.name}" onerror="this.src='https://via.placeholder.com/150?text=${encodeURIComponent(c.name)}'">
+            <div class="info">
+              <div class="name">${c.name}</div>
+              <div class="party">Party: ${c.party}</div>
+              <div class="bio">Bio: ${c.bio}</div>
+            </div>
+          </div>
+          <button class="vote-btn" onclick="vote(${index})">Vote for ${c.name}</button>
+        </div>`;
+      });
+
+      app.innerHTML = html;
+    }
+
+    function vote(index) {
+      votes.push(elections[current].candidates[index]);
+      current++;
+      window.scrollTo(0, 0);
+      render();
+    }
+
+    function restart() {
+      current = 0;
+      votes = [];
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>U.S. Presidential Election Simulator (1796–2024)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #f5f5f5; padding: 20px 16px; max-width: 620px; margin: 0 auto; }
+    h1 { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+    .subtitle { text-align: center; font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .progress { text-align: center; color: #666; margin-bottom: 22px; font-size: 14px; }
+    .candidate-card {
+      border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    .card-content { display: flex; gap: 16px; margin-bottom: 16px; }
+    .candidate-card img {
+      width: 90px; height: 90px; border-radius: 10px; object-fit: cover;
+      border: 3px solid rgba(255,255,255,0.7); background: #ddd; flex-shrink: 0;
+    }
+    .info { flex: 1; }
+    .name { font-size: 21px; font-weight: 700; margin-bottom: 4px; }
+    .party { font-size: 15px; margin-bottom: 8px; opacity: 0.95; }
+    .bio { font-size: 14px; line-height: 1.4; opacity: 0.95; }
+    .vote-btn {
+      display: block; width: 100%; background: #2563eb; color: white; border: none;
+      padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+    .results-card {
+      background: white; border-radius: 14px; padding: 20px; margin-bottom: 16px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1); color: #111;
+    }
+    .party-count { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+    button.restart { background: #ff3b30; color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 700; width: 100%; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    // Full list of elections from 1796 to 2024 (2 major candidates each)
+    const elections = [
+      { year: 1796, title: "Election of 1796", candidates: [
+        { name: "John Adams", party: "Federalist", color: "#e8a87c", image:
+"https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/John_Adams_A18236.jpg/440px-John_Adams_A18236.jpg",", bio: "Vice President under Washington, Founding Father, Senior Diplomat in Europe, Favored strong centralization, protectionism, and industriaism" },
+        { name: "Thomas Jefferson", party: "Democratic-Republican", color: "#2e7d32", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg/200px-Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg", bio: "Former Secretary of State. States’ rights and agrarian interests." }
+      ]},
+      { year: 1800, title: "Election of 1800", candidates: [
+        { name: "Thomas Jefferson", party: "Democratic-Republican", color: "#2e7d32", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg/200px-Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg", bio: "Incumbent Vice President. Revolution of 1800." },
+        { name: "John Adams", party: "Federalist", color: "#e8a87c", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/John_Adams_A18236.jpg/200px-John_Adams_A18236.jpg", bio: "Incumbent President seeking re-election." }
+      ]},
+      { year: 1804, title: "Election of 1804", candidates: [
+        { name: "Thomas Jefferson", party: "Democratic-Republican", color: "#2e7d32", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg/200px-Thomas_Jefferson_by_Rembrandt_Peale%2C_1800.jpg", bio: "Incumbent President. Louisiana Purchase era." },
+        { name: "Charles C. Pinckney", party: "Federalist", color: "#e8a87c", image: "https://via.placeholder.com/150?text=Pinckney", bio: "Federalist candidate, South Carolina statesman." }
+      ]},
+      { year: 1808, title: "Election of 1808", candidates: [
+        { name: "James Madison", party: "Democratic-Republican", color: "#2e7d32", image: "https://via.placeholder.com/150?text=Madison", bio: "Secretary of State under Jefferson. Father of the Constitution." },
+        { name: "Charles C. Pinckney", party: "Federalist", color: "#e8a87c", image: "https://via.placeholder.com/150?text=Pinckney", bio: "Federalist nominee again." }
+      ]},
+      { year: 1812, title: "Election of 1812", candidates: [
+        { name: "James Madison", party: "Democratic-Republican", color: "#2e7d32", image: "https://via.placeholder.com/150?text=Madison", bio: "Incumbent during the War of 1812." },
+        { name: "DeWitt Clinton", party: "Federalist", color: "#e8a87c", image: "https://via.placeholder.com/150?text=Clinton", bio: "New York politician opposing the war." }
+      ]},
+      { year: 1816, title: "Election of 1816", candidates: [
+        { name: "James Monroe", party: "Democratic-Republican", color: "#2e7d32", image: "https://via.placeholder.com/150?text=Monroe", bio: "Secretary of State and War. Era of Good Feelings begins." },
+        { name: "Rufus King", party: "Federalist", color: "#e8a87c", image: "https://via.placeholder.com/150?text=King", bio: "Last strong Federalist candidate." }
+      ]},
+      { year: 1820, title: "Election of 1820", candidates: [
+        { name: "James Monroe", party: "Democratic-Republican", color: "#2e7d32", image: "https://via.placeholder.com/150?text=Monroe", bio: "Incumbent. Essentially unopposed." },
+        { name: "John Quincy Adams", party: "Democratic-Republican", color: "#1565c0", image: "https://via.placeholder.com/150?text=JQA", bio: "Received one electoral vote." }
+      ]},
+      { year: 1824, title: "Election of 1824", candidates: [
+        { name: "John Quincy Adams", party: "Democratic-Republican", color: "#1565c0", image: "https://via.placeholder.com/150?text=JQA", bio: "Son of John Adams. Won in House of Representatives." },
+        { name: "Andrew Jackson", party: "Democratic-Republican", color: "#c62828", image: "https://via.placeholder.com/150?text=Jackson", bio: "War hero. Won popular and electoral vote but lost in House." }
+      ]},
+      { year: 1828, title: "Election of 1828", candidates: [
+        { name: "Andrew Jackson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Jackson", bio: "Founder of the Democratic Party. Landslide victory." },
+        { name: "John Quincy Adams", party: "National Republican", color: "#1565c0", image: "https://via.placeholder.com/150?text=JQA", bio: "Incumbent President." }
+      ]},
+      { year: 1832, title: "Election of 1832", candidates: [
+        { name: "Andrew Jackson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Jackson", bio: "Incumbent. Bank War era." },
+        { name: "Henry Clay", party: "National Republican", color: "#1565c0", image: "https://via.placeholder.com/150?text=Clay", bio: "The Great Compromiser." }
+      ]},
+      { year: 1836, title: "Election of 1836", candidates: [
+        { name: "Martin Van Buren", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Van+Buren", bio: "Jackson’s chosen successor." },
+        { name: "William Henry Harrison", party: "Whig", color: "#f9a825", image: "https://via.placeholder.com/150?text=Harrison", bio: "Leading Whig candidate." }
+      ]},
+      { year: 1840, title: "Election of 1840", candidates: [
+        { name: "William Henry Harrison", party: "Whig", color: "#f9a825", image: "https://via.placeholder.com/150?text=Harrison", bio: "Tippecanoe and Tyler Too." },
+        { name: "Martin Van Buren", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Van+Buren", bio: "Incumbent President." }
+      ]},
+      { year: 1844, title: "Election of 1844", candidates: [
+        { name: "James K. Polk", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Polk", bio: "Dark horse. Expansionist." },
+        { name: "Henry Clay", party: "Whig", color: "#f9a825", image: "https://via.placeholder.com/150?text=Clay", bio: "Whig nominee again." }
+      ]},
+      { year: 1848, title: "Election of 1848", candidates: [
+        { name: "Zachary Taylor", party: "Whig", color: "#f9a825", image: "https://via.placeholder.com/150?text=Taylor", bio: "Mexican-American War hero." },
+        { name: "Lewis Cass", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Cass", bio: "Democratic nominee." }
+      ]},
+      { year: 1852, title: "Election of 1852", candidates: [
+        { name: "Franklin Pierce", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Pierce", bio: "Compromise candidate." },
+        { name: "Winfield Scott", party: "Whig", color: "#f9a825", image: "https://via.placeholder.com/150?text=Scott", bio: "Last major Whig candidate." }
+      ]},
+      { year: 1856, title: "Election of 1856", candidates: [
+        { name: "James Buchanan", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Buchanan", bio: "Last pre-Civil War Democrat." },
+        { name: "John C. Frémont", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Fremont", bio: "First Republican presidential nominee." }
+      ]},
+      { year: 1860, title: "Election of 1860", candidates: [
+        { name: "Abraham Lincoln", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Lincoln", bio: "Republican nominee. Civil War begins after his election." },
+        { name: "Stephen A. Douglas", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Douglas", bio: "Northern Democratic nominee." }
+      ]},
+      { year: 1864, title: "Election of 1864", candidates: [
+        { name: "Abraham Lincoln", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Lincoln", bio: "Incumbent during Civil War. National Union ticket." },
+        { name: "George B. McClellan", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=McClellan", bio: "Former Union general." }
+      ]},
+      { year: 1868, title: "Election of 1868", candidates: [
+        { name: "Ulysses S. Grant", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Grant", bio: "Civil War hero." },
+        { name: "Horatio Seymour", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Seymour", bio: "Democratic nominee." }
+      ]},
+      { year: 1872, title: "Election of 1872", candidates: [
+        { name: "Ulysses S. Grant", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Grant", bio: "Incumbent President." },
+        { name: "Horace Greeley", party: "Liberal Republican / Democratic", color: "#6a1b9a", image: "https://via.placeholder.com/150?text=Greeley", bio: "Newspaper editor." }
+      ]},
+      { year: 1876, title: "Election of 1876", candidates: [
+        { name: "Rutherford B. Hayes", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Hayes", bio: "Won the disputed election." },
+        { name: "Samuel J. Tilden", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Tilden", bio: "Won the popular vote." }
+      ]},
+      { year: 1880, title: "Election of 1880", candidates: [
+        { name: "James A. Garfield", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Garfield", bio: "Republican nominee." },
+        { name: "Winfield Scott Hancock", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Hancock", bio: "Democratic nominee." }
+      ]},
+      { year: 1884, title: "Election of 1884", candidates: [
+        { name: "Grover Cleveland", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Cleveland", bio: "First Democrat elected since Civil War." },
+        { name: "James G. Blaine", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Blaine", bio: "Republican nominee." }
+      ]},
+      { year: 1888, title: "Election of 1888", candidates: [
+        { name: "Benjamin Harrison", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Harrison", bio: "Grandson of William Henry Harrison." },
+        { name: "Grover Cleveland", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Cleveland", bio: "Incumbent President." }
+      ]},
+      { year: 1892, title: "Election of 1892", candidates: [
+        { name: "Grover Cleveland", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Cleveland", bio: "Only president to serve two non-consecutive terms (until Trump)." },
+        { name: "Benjamin Harrison", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Harrison", bio: "Incumbent President." }
+      ]},
+      { year: 1896, title: "Election of 1896", candidates: [
+        { name: "William McKinley", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=McKinley", bio: "Front porch campaign." },
+        { name: "William Jennings Bryan", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Bryan", bio: "Cross of Gold speech." }
+      ]},
+      { year: 1900, title: "Election of 1900", candidates: [
+        { name: "William McKinley", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=McKinley", bio: "Incumbent. Theodore Roosevelt as running mate." },
+        { name: "William Jennings Bryan", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Bryan", bio: "Rematch." }
+      ]},
+      { year: 1904, title: "Election of 1904", candidates: [
+        { name: "Theodore Roosevelt", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=TR", bio: "Incumbent after McKinley’s assassination." },
+        { name: "Alton B. Parker", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Parker", bio: "Democratic nominee." }
+      ]},
+      { year: 1908, title: "Election of 1908", candidates: [
+        { name: "William Howard Taft", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Taft", bio: "Roosevelt’s chosen successor." },
+        { name: "William Jennings Bryan", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Bryan", bio: "Third try." }
+      ]},
+      { year: 1912, title: "Election of 1912", candidates: [
+        { name: "Woodrow Wilson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Wilson", bio: "Won because Republican vote split." },
+        { name: "Theodore Roosevelt", party: "Progressive", color: "#ef6c00", image: "https://via.placeholder.com/150?text=TR", bio: "Bull Moose Party." }
+      ]},
+      { year: 1916, title: "Election of 1916", candidates: [
+        { name: "Woodrow Wilson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Wilson", bio: "He kept us out of war." },
+        { name: "Charles Evans Hughes", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Hughes", bio: "Republican nominee." }
+      ]},
+      { year: 1920, title: "Election of 1920", candidates: [
+        { name: "Warren G. Harding", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Harding", bio: "Return to normalcy." },
+        { name: "James M. Cox", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Cox", bio: "Democratic nominee." }
+      ]},
+      { year: 1924, title: "Election of 1924", candidates: [
+        { name: "Calvin Coolidge", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Coolidge", bio: "Silent Cal. Incumbent." },
+        { name: "John W. Davis", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Davis", bio: "Democratic nominee." }
+      ]},
+      { year: 1928, title: "Election of 1928", candidates: [
+        { name: "Herbert Hoover", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Hoover", bio: "Prosperity nominee." },
+        { name: "Al Smith", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Smith", bio: "First Catholic major-party nominee." }
+      ]},
+      { year: 1932, title: "Election of 1932", candidates: [
+        { name: "Franklin D. Roosevelt", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=FDR", bio: "New Deal. Landslide." },
+        { name: "Herbert Hoover", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Hoover", bio: "Incumbent during Depression." }
+      ]},
+      { year: 1936, title: "Election of 1936", candidates: [
+        { name: "Franklin D. Roosevelt", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=FDR", bio: "Incumbent. Even bigger landslide." },
+        { name: "Alf Landon", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Landon", bio: "Republican nominee." }
+      ]},
+      { year: 1940, title: "Election of 1940", candidates: [
+        { name: "Franklin D. Roosevelt", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=FDR", bio: "Third term. Unprecedented." },
+        { name: "Wendell Willkie", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Willkie", bio: "Businessman turned candidate." }
+      ]},
+      { year: 1944, title: "Election of 1944", candidates: [
+        { name: "Franklin D. Roosevelt", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=FDR", bio: "Fourth term during World War II." },
+        { name: "Thomas E. Dewey", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Dewey", bio: "Republican nominee." }
+      ]},
+      { year: 1948, title: "Election of 1948", candidates: [
+        { name: "Harry S. Truman", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Truman", bio: "Dewey Defeats Truman (wrong)." },
+        { name: "Thomas E. Dewey", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Dewey", bio: "Rematch." }
+      ]},
+      { year: 1952, title: "Election of 1952", candidates: [
+        { name: "Dwight D. Eisenhower", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Ike", bio: "I Like Ike. War hero." },
+        { name: "Adlai Stevenson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Stevenson", bio: "Democratic nominee." }
+      ]},
+      { year: 1956, title: "Election of 1956", candidates: [
+        { name: "Dwight D. Eisenhower", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Ike", bio: "Incumbent. Easy re-election." },
+        { name: "Adlai Stevenson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Stevenson", bio: "Rematch." }
+      ]},
+      { year: 1960, title: "Election of 1960", candidates: [
+        { name: "John F. Kennedy", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=JFK", bio: "First televised debates. Narrow win." },
+        { name: "Richard Nixon", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Nixon", bio: "Vice President under Eisenhower." }
+      ]},
+      { year: 1964, title: "Election of 1964", candidates: [
+        { name: "Lyndon B. Johnson", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=LBJ", bio: "Landslide after Kennedy assassination." },
+        { name: "Barry Goldwater", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Goldwater", bio: "Extremism in the defense of liberty..." }
+      ]},
+      { year: 1968, title: "Election of 1968", candidates: [
+        { name: "Richard Nixon", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Nixon", bio: "Law and order. Comeback." },
+        { name: "Hubert Humphrey", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Humphrey", bio: "Vice President under Johnson." }
+      ]},
+      { year: 1972, title: "Election of 1972", candidates: [
+        { name: "Richard Nixon", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Nixon", bio: "Massive landslide." },
+        { name: "George McGovern", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=McGovern", bio: "Anti-war candidate." }
+      ]},
+      { year: 1976, title: "Election of 1976", candidates: [
+        { name: "Jimmy Carter", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Carter", bio: "Peanut farmer from Georgia." },
+        { name: "Gerald Ford", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Ford", bio: "Incumbent after Nixon resignation." }
+      ]},
+      { year: 1980, title: "Election of 1980", candidates: [
+        { name: "Ronald Reagan", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Reagan", bio: "Are you better off than you were four years ago?" },
+        { name: "Jimmy Carter", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Carter", bio: "Incumbent President." }
+      ]},
+      { year: 1984, title: "Election of 1984", candidates: [
+        { name: "Ronald Reagan", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Reagan", bio: "Morning in America. Historic landslide." },
+        { name: "Walter Mondale", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Mondale", bio: "Former Vice President." }
+      ]},
+      { year: 1988, title: "Election of 1988", candidates: [
+        { name: "George H. W. Bush", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Bush41", bio: "Read my lips: no new taxes." },
+        { name: "Michael Dukakis", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Dukakis", bio: "Massachusetts governor." }
+      ]},
+      { year: 1992, title: "Election of 1992", candidates: [
+        { name: "Bill Clinton", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Clinton", bio: "It’s the economy, stupid." },
+        { name: "George H. W. Bush", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Bush41", bio: "Incumbent President." }
+      ]},
+      { year: 1996, title: "Election of 1996", candidates: [
+        { name: "Bill Clinton", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Clinton", bio: "Incumbent. Bridge to the 21st century." },
+        { name: "Bob Dole", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Dole", bio: "Senate Majority Leader." }
+      ]},
+      { year: 2000, title: "Election of 2000", candidates: [
+        { name: "George W. Bush", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Bush43", bio: "Narrow Electoral College win." },
+        { name: "Al Gore", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Gore", bio: "Won the popular vote." }
+      ]},
+      { year: 2004, title: "Election of 2004", candidates: [
+        { name: "George W. Bush", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Bush43", bio: "Incumbent during War on Terror." },
+        { name: "John Kerry", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Kerry", bio: "Massachusetts senator." }
+      ]},
+      { year: 2008, title: "Election of 2008", candidates: [
+        { name: "Barack Obama", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Obama", bio: "Yes We Can. First Black president." },
+        { name: "John McCain", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=McCain", bio: "Arizona senator and war hero." }
+      ]},
+      { year: 2012, title: "Election of 2012", candidates: [
+        { name: "Barack Obama", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Obama", bio: "Incumbent. Four more years." },
+        { name: "Mitt Romney", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Romney", bio: "Former Massachusetts governor." }
+      ]},
+      { year: 2016, title: "Election of 2016", candidates: [
+        { name: "Donald Trump", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Trump", bio: "Make America Great Again." },
+        { name: "Hillary Clinton", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Clinton", bio: "First woman major-party nominee." }
+      ]},
+      { year: 2020, title: "Election of 2020", candidates: [
+        { name: "Joe Biden", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Biden", bio: "Former Vice President." },
+        { name: "Donald Trump", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Trump", bio: "Incumbent President." }
+      ]},
+      { year: 2024, title: "Election of 2024", candidates: [
+        { name: "Donald Trump", party: "Republican", color: "#b71c1c", image: "https://via.placeholder.com/150?text=Trump", bio: "Former President. Won second non-consecutive term." },
+        { name: "Kamala Harris", party: "Democratic", color: "#c62828", image: "https://via.placeholder.com/150?text=Harris", bio: "Vice President. First woman of color major-party nominee." }
+      ]}
+    ];
+
+    let current = 0;
+    let votes = [];
+
+    function render() {
+      const app = document.getElementById("app");
+
+      if (current >= elections.length) {
+        // Final results
+        const partyCount = {};
+        votes.forEach(v => {
+          partyCount[v.party] = (partyCount[v.party] || 0) + 1;
+        });
+
+        let html = `<h1>Your Complete Ballot</h1>
+          <div class="progress">You voted in all ${elections.length} elections</div>
+          <div class="results-card"><h2 style="margin-bottom:14px">Candidates You Chose</h2>`;
+
+        votes.forEach((v, i) => {
+          html += `<div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #eee">
+            <strong>${elections[i].title}</strong><br>
+            <span style="color:\( {v.color};font-weight:700"> \){v.name}</span> (${v.party})
+          </div>`;
+        });
+
+        html += `</div><div class="results-card"><h2 style="margin-bottom:14px">Party Totals</h2>`;
+        for (let p in partyCount) {
+          html += `<div class="party-count"><span>\( {p}</span><strong> \){partyCount[p]} time${partyCount[p] > 1 ? "s" : ""}</strong></div>`;
+        }
+        html += `</div><button class="restart" onclick="restart()">Start Over</button>`;
+        app.innerHTML = html;
+        return;
+      }
+
+      const e = elections[current];
+      let html = `<h1>U.S. Presidential Election Simulator</h1>
+        <div class="subtitle">${e.title}</div>
+        <div class="progress">Election ${current + 1} of ${elections.length}</div>`;
+
+      e.candidates.forEach((c, index) => {
+        html += `<div class="candidate-card" style="background:${c.color}">
+          <div class="card-content">
+            <img src="\( {c.image}" alt=" \){c.name}" onerror="this.src='https://via.placeholder.com/150?text=${encodeURIComponent(c.name)}'">
+            <div class="info">
+              <div class="name">${c.name}</div>
+              <div class="party">Party: ${c.party}</div>
+              <div class="bio">Bio: ${c.bio}</div>
+            </div>
+          </div>
+          <button class="vote-btn" onclick="vote(${index})">Vote for ${c.name}</button>
+        </div>`;
+      });
+
+      app.innerHTML = html;
+    }
+
+    function vote(index) {
+      votes.push(elections[current].candidates[index]);
+      current++;
+      window.scrollTo(0, 0);
+      render();
+    }
+
+    function restart() {
+      current = 0;
+      votes = [];
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
+
+
